@@ -22,7 +22,7 @@ body {
 .panel-left {
   background-color: #fff;
   border-radius: 20px;
-  width: 620px;
+  width: 540px;
   min-width: 320px;
   height: 82vh;
   max-height: 700px;
@@ -41,14 +41,14 @@ body {
 }
 
 .panel-image {
-  flex: 5.4;
-  min-height: 420px;
+  flex: 1.4;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   border-radius: 18px;
   background: #f8f0f5;
+  min-height: 0;
 }
 
 .panel-image img {
@@ -56,7 +56,6 @@ body {
   height: 100%;
   object-fit: cover;
   display: block;
-  max-height: 100%;
 }
 
 .brand-title {
