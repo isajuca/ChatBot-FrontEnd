@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const avatar = document.createElement('div');
             avatar.classList.add('bot-avatar');
-            avatar.textContent = '🤖';
+            avatar.innerHTML = '<img src="images/carinha.png" alt="Avatar do bot" width="70">';
             messageElement.appendChild(avatar);
 
             const body = document.createElement('div');
