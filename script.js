@@ -1,4 +1,4 @@
-const URL_BACKEND = 'https://chatbot-backend-ww89.onrender.com'
+const URL_BACKEND = 'https://chatbot-backend-1-06pj.onrender.com'
 
 document.addEventListener('DOMContentLoaded', () => {
     let socket = null;
