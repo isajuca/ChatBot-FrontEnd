@@ -1,4 +1,4 @@
-const URL_BACKEND = ' https://chatbot-backend-ww89.onrender.com' 
+const URL_BACKEND = 'https://chatbot-backend-ww89.onrender.com'
 
 document.addEventListener('DOMContentLoaded', () => {
     let socket = null;
@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatBox = document.getElementById('chat-box');
     const messageInput = document.getElementById('message-input');
     const sendButton = document.getElementById('send-button');
+    const emojiButton = document.querySelector('.emoji-btn');
     const connectionStatus = document.getElementById('connection-status');
     const iniciarBtn = document.getElementById('iniciarBtn');
     const encerrarBtn = document.getElementById('encerrarBtn');
@@ -13,87 +14,114 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let userSessionId = null;
 
-    // Função para adicionar mensagens no chat
+    function getTime() {
+        return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
     function addMessageToChat(sender, text, type = 'normal') {
         const messageElement = document.createElement('div');
         messageElement.classList.add('message');
 
-        if (sender.toLowerCase() === 'user') {
+        const senderLower = sender.toLowerCase();
+
+        if (senderLower === 'user') {
             messageElement.classList.add('user-message');
-            sender = 'Você';
-        } else if (sender.toLowerCase() === 'bot') {
+
+            const textSpan = document.createElement('span');
+            textSpan.innerHTML = marked.parse(text);
+            messageElement.appendChild(textSpan);
+
+            const timeDiv = document.createElement('div');
+            timeDiv.classList.add('msg-time');
+            timeDiv.textContent = getTime();
+            messageElement.appendChild(timeDiv);
+
+        } else if (senderLower === 'bot') {
             messageElement.classList.add('bot-message');
-            sender = 'Bot';
+
+            const avatar = document.createElement('div');
+            avatar.classList.add('bot-avatar');
+            avatar.textContent = '🤖';
+            messageElement.appendChild(avatar);
+
+            const body = document.createElement('div');
+            body.classList.add('bot-message-body');
+
+            const textSpan = document.createElement('span');
+            textSpan.innerHTML = marked.parse(text);
+            body.appendChild(textSpan);
+
+            const timeDiv = document.createElement('div');
+            timeDiv.classList.add('msg-time');
+            timeDiv.textContent = getTime();
+            body.appendChild(timeDiv);
+
+            messageElement.appendChild(body);
+
         } else {
             messageElement.classList.add('status-message');
-        }
+            if (type === 'error') messageElement.classList.add('error-text');
 
-        if (type === 'error') {
-            messageElement.classList.add('error-text');
-            sender = 'Erro';
-        } else if (type === 'status') {
-            messageElement.classList.add('status-text');
-            sender = 'Status';
-        }
+            const icon = type === 'error' ? '⚠️' : '✨';
+            const label = type === 'error' ? 'Erro' : 'Status';
 
-        const senderSpan = document.createElement('strong');
-        senderSpan.textContent = `${sender}: `;
-        messageElement.appendChild(senderSpan);
+            const senderSpan = document.createElement('strong');
+            senderSpan.textContent = `${icon} ${label}: `;
+            messageElement.appendChild(senderSpan);
 
-        const textSpan = document.createElement('span');
-        
-        // Se for uma mensagem normal (bot ou usuário), renderiza o Markdown
-        if (type === 'normal') {
-            textSpan.innerHTML = marked.parse(text);
-        } else {
-            // Se for erro ou status, mantém como texto puro
+            const textSpan = document.createElement('span');
             textSpan.textContent = text;
+            messageElement.appendChild(textSpan);
         }
-        
-        messageElement.appendChild(textSpan);
 
         chatBox.appendChild(messageElement);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    // Função para habilitar/desabilitar o chat
     function setChatEnabled(enabled) {
         messageInput.disabled = !enabled;
         sendButton.disabled = !enabled;
+        if (emojiButton) emojiButton.disabled = !enabled;
     }
 
-    // Inicialmente desativa o chat
     setChatEnabled(false);
-    connectionStatus.textContent = 'Desconectado';
-    connectionStatus.className = 'status-offline';
+    connectionStatus.textContent = '● Desconectado';
+    connectionStatus.className = 'status-badge status-offline';
     addMessageToChat('Status', 'Clique em "Iniciar conversa" para começar.', 'status');
 
-    // Função para conectar ao servidor
     function iniciarConversa() {
         if (socket && socket.connected) return;
+
+        setChatEnabled(false);
+        connectionStatus.innerHTML = '<span class="status-dot"></span> Tentando conectar...';
+        connectionStatus.className = 'status-badge status-offline';
+        addMessageToChat('Status', 'Tentando conectar ao servidor...', 'status');
 
         socket = io(URL_BACKEND);
 
         socket.on('connect', () => {
-            console.log('Conectado ao servidor Socket.IO! SID:', socket.id);
-            connectionStatus.textContent = 'Conectado';
-            connectionStatus.className = 'status-online';
+            connectionStatus.innerHTML = '<span class="status-dot"></span> Online e pronto para ajudar!';
+            connectionStatus.className = 'status-badge status-online';
             addMessageToChat('Status', 'Conectado ao servidor de chat.', 'status');
             setChatEnabled(true);
         });
 
+        socket.on('connect_error', () => {
+            connectionStatus.innerHTML = '<span class="status-dot"></span> Desconectado';
+            connectionStatus.className = 'status-badge status-offline';
+            addMessageToChat('Erro', 'Não foi possível conectar ao servidor. Verifique se ele está online e tente novamente.', 'error');
+            setChatEnabled(false);
+        });
+
         socket.on('disconnect', () => {
-            console.log('Desconectado do servidor Socket.IO.');
-            connectionStatus.textContent = 'Desconectado';
-            connectionStatus.className = 'status-offline';
+            connectionStatus.innerHTML = '<span class="status-dot"></span> Desconectado';
+            connectionStatus.className = 'status-badge status-offline';
             addMessageToChat('Status', 'Você foi desconectado.', 'status');
             setChatEnabled(false);
         });
 
         socket.on('status_conexao', (data) => {
-            if (data.session_id) {
-                userSessionId = data.session_id;
-            }
+            if (data.session_id) userSessionId = data.session_id;
         });
 
         socket.on('nova_mensagem', (data) => {
@@ -105,7 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Função para encerrar a conversa
     function encerrarConversa() {
         if (socket && socket.connected) {
             socket.disconnect();
@@ -114,13 +141,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Função para limpar as mensagens da tela
     function limparTela() {
-        chatBox.innerHTML = ''; // Isso apaga todo o HTML de dentro da caixa de chat
-        addMessageToChat('Status', 'Tela limpa.', 'status');
+        chatBox.innerHTML = '';
+        addMessageToChat('Status', 'Tela limpa. Pronto para ouvir você!', 'status');
     }
 
-    // Enviar mensagem para o servidor
     function sendMessageToServer() {
         const messageText = messageInput.value.trim();
         if (messageText === '') return;
@@ -135,16 +160,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Eventos dos botões
     iniciarBtn.addEventListener('click', iniciarConversa);
     encerrarBtn.addEventListener('click', encerrarConversa);
     limparBtn.addEventListener('click', limparTela);
     sendButton.addEventListener('click', sendMessageToServer);
 
     messageInput.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter') {
-            sendMessageToServer();
-        }
+        if (event.key === 'Enter') sendMessageToServer();
     });
 });
-
